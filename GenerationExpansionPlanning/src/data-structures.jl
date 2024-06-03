@@ -21,7 +21,7 @@ struct ExperimentData
     value_of_lost_load::Float64
     relaxation::Bool
 
-    function ExperimentData(config_dict::Dict{Symbol,Any})
+    function ExperimentData(config_dict::Dict)
         sets = config_dict[:sets]
         data = config_dict[:data]
         scalars = data[:scalars]

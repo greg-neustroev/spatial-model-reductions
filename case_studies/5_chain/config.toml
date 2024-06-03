@@ -1,0 +1,23 @@
+[input.data]
+# input directory with the files
+dir = "inputs"
+demand = "demand.csv"
+generation_availability = "generation_availability.csv"
+generation = "generation.csv"
+transmission_lines = "transmission_lines2.csv"
+scalars = "scalars.toml"
+line_capacities_bidirectional = false
+clusters = [[[['l0'], ['l1']], [['l2'], ['l3']]], [[['l4']]]]
+[input.sets]
+time_steps = "auto"
+locations = "auto"
+transmission_lines = "auto"
+generators = "auto"
+[output]
+dir = "output"
+investment = "investment.csv"
+production = "production.csv"
+line_flow = "line_flow.csv"
+loss_of_load = "loss_of_load.csv"
+scalars = "scalars.toml"
+                

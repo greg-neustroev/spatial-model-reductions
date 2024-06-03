@@ -1,0 +1,5 @@
+# Value of lost load (cost of not supplying energy) [kEUR/MWh]
+value_of_lost_load = 3.0
+# If true, an LP relaxation of the problem will be solved
+relaxation = false
+    

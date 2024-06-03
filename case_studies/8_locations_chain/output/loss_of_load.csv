@@ -1,0 +1,11 @@
+location,time_step,loss_of_load
+UKI,1,50.0
+LUX,2,50.0
+ITA,3,50.0
+SPA,4,50.0
+SPA,5,50.0
+ITA,6,50.0
+LUX,7,50.0
+ITA,8,50.0
+ITA,9,50.0
+LUX,10,50.0

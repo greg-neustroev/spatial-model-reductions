@@ -1,6 +1,11 @@
-export run_experiment
+export run_optimisation
 
-function run_experiment(data::ExperimentData, optimizer_factory)::ExperimentResult
+"""
+    run_optimisation(data::ExperimentData, optimizer_factory, lowerbound=nothing, line_capacities_bidirectional::Bool)::ExperimentResult
+
+    create and optimize model. line_capacities_bidirectional is used to specify whether you ar using bidirectional capacity lines or directional
+"""
+function run_optimisation(data::ExperimentData, optimizer_factory, line_capacities_bidirectional::Bool, lowerbound=nothing)::ExperimentResult
     # 1. Extract data into local variables
     @info "Reading the sets"
     N = data.locations
@@ -18,8 +23,13 @@ function run_experiment(data::ExperimentData, optimizer_factory)::ExperimentResu
     variable_cost = dataframe_to_dict(data.generation, [:location, :technology], :variable_cost)
     unit_capacity = dataframe_to_dict(data.generation, [:location, :technology], :unit_capacity)
     ramping_rate = dataframe_to_dict(data.generation, [:location, :technology], :ramping_rate)
-    export_capacity = dataframe_to_dict(data.transmission_capacities, [:from, :to], :export_capacity)
-    import_capacity = dataframe_to_dict(data.transmission_capacities, [:from, :to], :import_capacity)
+
+    if line_capacities_bidirectional
+        export_capacity = dataframe_to_dict(data.transmission_capacities, [:from, :to], :export_capacity)
+        import_capacity = dataframe_to_dict(data.transmission_capacities, [:from, :to], :import_capacity)
+    else
+        transmission_capacity = dataframe_to_dict(data.transmission_capacities, [:from, :to], :capacity)
+    end
 
     @info "Solving the problem"
     dt = @elapsed begin
@@ -31,11 +41,20 @@ function run_experiment(data::ExperimentData, optimizer_factory)::ExperimentResu
         @variable(model, 0 ≤ total_operational_cost)
         @variable(model, 0 ≤ investment[n ∈ N, g ∈ G; (n, g) ∈ NG], integer = !data.relaxation)
         @variable(model, 0 ≤ production[n ∈ N, g ∈ G, T; (n, g) ∈ NG])
-        @variable(model,
+
+        if line_capacities_bidirectional
+            @variable(model,
             -import_capacity[n_from, n_to] ≤
             line_flow[n_from ∈ N, n_to ∈ N, t ∈ T; (n_from, n_to) ∈ L] ≤
             export_capacity[n_from, n_to]
         )
+        else
+            @variable(model,
+                0 ≤
+                line_flow[n_from ∈ N, n_to ∈ N, t ∈ T; (n_from, n_to) ∈ L] ≤
+                transmission_capacity[n_from, n_to]
+            )
+        end
         @variable(model, 0 ≤ loss_of_load[n ∈ N, t ∈ T] ≤ demand[n, t])
 
         @info "Precomputing expressions"
@@ -91,6 +110,11 @@ function run_experiment(data::ExperimentData, optimizer_factory)::ExperimentResu
             # Ramping down
             @constraint(model, ramping[n, g, t] ≥ -ramping_rate[n, g] * investment_MW[n, g])
         end
+
+        if lowerbound !== nothing
+            @info "Setting upper bound"
+            set_optimizer_attribute(model, "Cutoff", lowerbound)
+        end 
 
         # 5. Solve the model
         @info "Solving the model"
